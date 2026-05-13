@@ -18,6 +18,8 @@ export interface ICertificate extends mongoose.Document {
   skill_title: string;
   experience_years: number;
   issue_date?: Date;
+  start_date?: Date;
+  end_date?: Date;
   status: CertificateStatus;
 }
 
@@ -38,6 +40,8 @@ const certificateSchema = new mongoose.Schema<ICertificate>(
     skill_title: { type: String, maxlength: 255, default: "Agriculture" },
     experience_years: { type: Number, default: 5, min: 0 },
     issue_date: { type: Date },
+    start_date: { type: Date },
+    end_date: { type: Date },
     status: {
       type: String,
       enum: ["draft", "published"],

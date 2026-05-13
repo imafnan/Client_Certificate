@@ -7,7 +7,8 @@ import { parseOptionalDate } from "../utils/dates";
 
 const router = Router();
 
-const REF_PREFIX = "REF";
+/** Certificate reference: SPD + 6-digit sequence (e.g. SPD000001). */
+const REF_PREFIX = "SPD";
 
 async function nextSequence(): Promise<number> {
   const doc = await Counter.findOneAndUpdate(
@@ -22,12 +23,8 @@ async function nextSequence(): Promise<number> {
 }
 
 function refNoFromSequence(seq: number): string {
-  const suffix = String(seq).padStart(12, "0");
-  const combined = `${REF_PREFIX}${suffix}`;
-  if (combined.length > 20) {
-    throw new Error("ref_no would exceed VARCHAR(20)");
-  }
-  return combined;
+  const suffix = String(seq).padStart(6, "0");
+  return `${REF_PREFIX}${suffix}`;
 }
 
 router.get("/", requireAdmin, async (_req, res) => {
@@ -107,6 +104,8 @@ router.post("/", requireAdmin, async (req, res) => {
           ? Math.trunc(body.experience_years)
           : 5,
       issue_date: parseOptionalDate(body.issue_date),
+      start_date: parseOptionalDate(body.start_date),
+      end_date: parseOptionalDate(body.end_date),
       status:
         body.status === "published" || body.status === "draft"
           ? body.status
@@ -141,6 +140,8 @@ const PATCHABLE = [
   "skill_title",
   "experience_years",
   "issue_date",
+  "start_date",
+  "end_date",
   "status",
 ] as const;
 
@@ -157,7 +158,12 @@ router.patch("/:id", requireAdmin, async (req, res) => {
   for (const key of PATCHABLE) {
     if (!(key in body)) continue;
     const value = body[key];
-    if (key === "date_of_birth" || key === "issue_date") {
+    if (
+      key === "date_of_birth" ||
+      key === "issue_date" ||
+      key === "start_date" ||
+      key === "end_date"
+    ) {
       const d = parseOptionalDate(value);
       if (value !== undefined && value !== null && value !== "" && !d) {
         res.status(400).json({

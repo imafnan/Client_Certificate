@@ -36,5 +36,6 @@ export async function requireAdmin(
     return;
   }
 
+  req.adminUser = user;
   next();
 }
