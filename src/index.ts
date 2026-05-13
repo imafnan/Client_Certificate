@@ -4,8 +4,10 @@ import bcrypt from "bcrypt";
 import express from "express";
 import mongoose from "mongoose";
 import { User } from "./models/User";
-import { ensureAdminFromEnv } from "./seedAdmin";
 import { certificatesRouter } from "./routes/certificates";
+import { adminRouter } from "./routes/admin";
+import { configureCloudinary } from "./config/cloudinary";
+import { siteSettingsRouter } from "./routes/siteSettings";
 
 const app = express();
 app.use(express.json());
@@ -41,14 +43,23 @@ async function start(): Promise<void> {
     await mongoose.connect(uri);
     console.log("Database is connected successfully");
 
+    const adminCount = await User.countDocuments({ role: "admin" });
+    if (adminCount === 0) {
+      console.warn(
+        "No admin user in the database. Create one with POST /admin/bootstrap (JSON body: email, password)."
+      );
+    }
+
     const userFromUri = /^mongodb(\+srv)?:\/\/([^:]+):/i.exec(uri);
     if (userFromUri?.[2]) {
       console.log(`MongoDB username: ${userFromUri[2]}`);
     }
 
-    await ensureAdminFromEnv();
+    configureCloudinary();
 
+    app.use("/admin", adminRouter);
     app.use("/certificates", certificatesRouter);
+    app.use("/site-settings", siteSettingsRouter);
 
     app.get("/", (_req, res) => {
       res.json({ ok: true, message: "API is running" });
